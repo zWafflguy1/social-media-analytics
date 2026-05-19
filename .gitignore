@@ -6,6 +6,13 @@ node_modules/
 # Next.js
 .next/
 out/
+next-env.d.ts
+
+# TypeScript
+*.tsbuildinfo
+
+# npm lockfile — repo currently uses none; uncomment to enforce reproducible installs
+package-lock.json
 
 # Environment variables — NEVER commit these
 .env
