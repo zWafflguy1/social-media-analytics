@@ -1,6 +1,7 @@
 'use client';
 
-import { RefreshCw, LogOut, ChevronDown } from 'lucide-react';
+import Link from 'next/link';
+import { RefreshCw, LogOut, ChevronDown, Bot } from 'lucide-react';
 import { signOut, signIn } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import type { DatePreset } from '@/types';
@@ -113,6 +114,15 @@ export function Header({
             </select>
             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" size={12} />
           </div>
+
+          {/* AI Agent link */}
+          <Link
+            href="/ai-agent"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/10 border border-blue-500/40 text-blue-300 hover:bg-blue-600/20 hover:text-blue-200 rounded-lg text-xs transition-colors"
+          >
+            <Bot size={12} />
+            AI Search Agent
+          </Link>
 
           {/* Refresh */}
           <button

@@ -96,6 +96,40 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with your Meta a
 
 ---
 
+## AI Search Elevation Agent
+
+The dashboard ships with a multi-tenant agent that cooperates with AI
+crawlers and live agents (GPTBot, ChatGPT-User, ClaudeBot, PerplexityBot,
+Google-Extended, Applebot-Extended, etc.) to elevate registered sites in
+AI search results.
+
+**Manage**: sign in, then visit `/ai-agent`. Each connected site gets a
+`siteKey` and an embed snippet.
+
+**Embed on a client site** (drop in `<head>`):
+
+```html
+<script async src="https://YOUR-AGENT-HOST/api/ai-agent/embed?siteKey=sk_live_..."></script>
+```
+
+The snippet injects schema.org JSON-LD, AI-friendly meta tags, and pings
+`/api/ai-agent/engage` on every page view so engagements are logged.
+
+**Public agent endpoints** (CORS-open, `siteKey`-scoped):
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET  /api/ai-agent/manifest` | Self-describing capabilities document |
+| `GET  /api/ai-agent/engage?siteKey=...` | Cooperative payload for an AI crawler/agent hitting a page |
+| `POST /api/ai-agent/query` | `{ siteKey, query }` → structured answer + citations |
+| `GET  /api/ai-agent/llms-txt?siteKey=...` | Markdown llms.txt-format document for a site |
+| `GET  /api/ai-agent/embed?siteKey=...` | JS snippet for client sites |
+
+State is in-memory by default (seeded with a demo coffee-roaster). Swap
+`lib/ai-agent/store.ts` for a DB-backed implementation for production.
+
+---
+
 ## Project Structure
 
 ```

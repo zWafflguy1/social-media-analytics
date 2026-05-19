@@ -181,7 +181,7 @@ async function getOrganizationInsights(
         const date = parseDate(el.timeRange.start);
         impressionsSeries.push({ date, value: s.impressionCount ?? 0 });
         clicksSeries.push({ date, value: s.clickCount ?? 0 });
-        engagementSeries.push({ date, value: s.likeCount + s.commentCount + s.shareCount ?? 0 });
+        engagementSeries.push({ date, value: (s.likeCount ?? 0) + (s.commentCount ?? 0) + (s.shareCount ?? 0) });
       }
     }
 
