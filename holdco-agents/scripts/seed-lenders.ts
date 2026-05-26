@@ -1,0 +1,178 @@
+import { db, now } from '../shared/db/client.js';
+
+// Curated starter set of lower-middle-market SBA-preferred lenders and conventional/online
+// players. Update these from authoritative sources (SBA.gov 7(a) lender ranking, your own
+// banking relationships) before running production outreach.
+
+const LENDERS = [
+  {
+    name: 'Live Oak Bank',
+    type: 'sba-preferred',
+    products: '7a,504,conv-term',
+    sba_preferred: 1,
+    min_loan: 250_000,
+    max_loan: 5_000_000,
+    industries_focus: 'self-storage,veterinary,dental,funeral,franchise,vrbnb,family entertainment',
+    industries_avoid: '',
+    geography: 'national',
+    typical_rate: 'WSJ Prime + 2.25-2.75',
+    contact_url: 'https://www.liveoakbank.com/small-business-loans/',
+    notes: 'Vertical specialists. Strong for absentee-friendly recurring revenue businesses.',
+  },
+  {
+    name: 'Huntington Bank',
+    type: 'sba-preferred',
+    products: '7a,504,conv-term,line-of-credit',
+    sba_preferred: 1,
+    min_loan: 100_000,
+    max_loan: 5_000_000,
+    industries_focus: '',
+    industries_avoid: 'cannabis,adult',
+    geography: 'OH,MI,PA,IN,IL,WV,KY,MN,WI,CO',
+    typical_rate: 'WSJ Prime + 2.50',
+    contact_url: 'https://www.huntington.com/Business/loans/sba-loans',
+    notes: 'Top SBA volume lender nationally. Good for first-time acquirers.',
+  },
+  {
+    name: 'Pursuit Lending',
+    type: 'sba-preferred',
+    products: '7a,504',
+    sba_preferred: 1,
+    min_loan: 25_000,
+    max_loan: 5_000_000,
+    industries_focus: '',
+    industries_avoid: '',
+    geography: 'NY,NJ,CT,PA,DC',
+    typical_rate: 'WSJ Prime + 2.75',
+    contact_url: 'https://pursuitlending.com/',
+    notes: 'Strong for Northeast. CDFI with flexible underwriting.',
+  },
+  {
+    name: 'Newtek Small Business Finance',
+    type: 'sba-preferred',
+    products: '7a,504',
+    sba_preferred: 1,
+    min_loan: 100_000,
+    max_loan: 15_000_000,
+    industries_focus: '',
+    industries_avoid: 'restaurants,gas-stations',
+    geography: 'national',
+    typical_rate: 'WSJ Prime + 2.75-3.00',
+    contact_url: 'https://www.newtekone.com/sba-loans/',
+    notes: 'Volume-oriented. Can pair SBA with conventional for deals over $5M.',
+  },
+  {
+    name: 'Celtic Bank',
+    type: 'sba-preferred',
+    products: '7a,504,conv-term',
+    sba_preferred: 1,
+    min_loan: 350_000,
+    max_loan: 5_000_000,
+    industries_focus: 'franchise,e-commerce,saas',
+    industries_avoid: '',
+    geography: 'national',
+    typical_rate: 'WSJ Prime + 2.75',
+    contact_url: 'https://www.celticbank.com/sba-loans',
+    notes: 'Open to digital/e-com businesses where many SBA lenders decline.',
+  },
+  {
+    name: 'Byline Bank',
+    type: 'sba-preferred',
+    products: '7a,504,conv-term',
+    sba_preferred: 1,
+    min_loan: 250_000,
+    max_loan: 5_000_000,
+    industries_focus: 'healthcare,manufacturing,distribution',
+    industries_avoid: '',
+    geography: 'national',
+    typical_rate: 'WSJ Prime + 2.50',
+    contact_url: 'https://www.bylinebank.com/business/sba-loans',
+    notes: 'Strong manufacturing/distribution underwriting.',
+  },
+  {
+    name: 'Wells Fargo Commercial Banking',
+    type: 'conventional',
+    products: 'conv-term,line-of-credit',
+    sba_preferred: 0,
+    min_loan: 1_000_000,
+    max_loan: 50_000_000,
+    industries_focus: '',
+    industries_avoid: 'cannabis,adult',
+    geography: 'national',
+    typical_rate: 'SOFR + 2.50-3.50',
+    contact_url: 'https://www.wellsfargo.com/biz/business-credit/',
+    notes: 'Conventional path for deals over SBA cap. Requires established borrower or strong sponsor.',
+  },
+  {
+    name: 'Pinnacle Bank',
+    type: 'conventional',
+    products: 'conv-term,line-of-credit',
+    sba_preferred: 0,
+    min_loan: 500_000,
+    max_loan: 25_000_000,
+    industries_focus: 'b2b services,healthcare,specialty distribution',
+    industries_avoid: '',
+    geography: 'TN,NC,SC,VA,GA',
+    typical_rate: 'WSJ Prime + 1.50-2.50',
+    contact_url: 'https://www.pnfp.com/business/financing/',
+    notes: 'Relationship-driven middle-market lender. Faster than national banks.',
+  },
+  {
+    name: 'Bridge Bank (Western Alliance)',
+    type: 'conventional',
+    products: 'conv-term,line-of-credit,asset-based',
+    sba_preferred: 0,
+    min_loan: 2_000_000,
+    max_loan: 50_000_000,
+    industries_focus: 'tech,life-sciences,saas',
+    industries_avoid: '',
+    geography: 'national',
+    typical_rate: 'SOFR + 3.50-5.00',
+    contact_url: 'https://www.bridgebank.com/',
+    notes: 'Tech/SaaS focus. Will lend against ARR.',
+  },
+  {
+    name: 'NewSpring Mezzanine',
+    type: 'mezzanine',
+    products: 'mezz',
+    sba_preferred: 0,
+    min_loan: 5_000_000,
+    max_loan: 25_000_000,
+    industries_focus: '',
+    industries_avoid: '',
+    geography: 'national',
+    typical_rate: '11-13% cash + 2-3% PIK + warrants',
+    contact_url: 'https://newspringcapital.com/strategies/mezzanine/',
+    notes: 'Fills equity gap on $10M+ deals. Patient, control-friendly.',
+  },
+];
+
+const ins = db().prepare(`
+  INSERT INTO lenders
+    (name, type, products, sba_preferred, min_loan, max_loan,
+     industries_focus, industries_avoid, geography, typical_rate, contact_url, notes, created_at)
+  VALUES
+    (@name, @type, @products, @sba_preferred, @min_loan, @max_loan,
+     @industries_focus, @industries_avoid, @geography, @typical_rate, @contact_url, @notes, @created_at)
+  ON CONFLICT(name) DO UPDATE SET
+    products = excluded.products,
+    min_loan = excluded.min_loan,
+    max_loan = excluded.max_loan,
+    industries_focus = excluded.industries_focus,
+    industries_avoid = excluded.industries_avoid,
+    geography = excluded.geography,
+    typical_rate = excluded.typical_rate,
+    contact_url = excluded.contact_url,
+    notes = excluded.notes
+`);
+
+const t = now();
+for (const l of LENDERS) {
+  ins.run({
+    ...l,
+    min_loan: l.min_loan * 100,
+    max_loan: l.max_loan * 100,
+    created_at: t,
+  });
+}
+console.log(`Seeded ${LENDERS.length} lenders.`);
