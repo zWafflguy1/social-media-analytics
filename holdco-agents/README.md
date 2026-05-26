@@ -14,6 +14,7 @@ for human-in-the-loop approval and monitoring.
 | **capital-matcher** | every 6 hrs (15min after scout) | For each deal scoring ≥ 70, ranks investors in your CRM by sector / check size / geo / thesis fit. Drafts a tailored outreach email per top match. **Drafts go to the outreach queue — you approve before sending.** |
 | **debt-architect** | every 6 hrs (30min after scout) | For each qualified deal, ranks lenders, picks the best 3, and writes a full loan application package (executive summary, business overview, financials, sources & uses, DSCR analysis, risk factors). |
 | **portfolio-cfo** | daily 7 AM + Monday 5 AM | Daily risk scan: stale outreach, funding gaps, drifting diligence. Monday 5 AM: composes and emails the weekly report to `REPORT_TO_EMAIL`. |
+| **investor-enricher** | weekly (Sat 3 AM) | Builds the investor CRM from public sources: scans recent SEC Form D filings for investment entities (funds, family-office vehicles), Google News for active deal-makers. Extracts profile data with Claude. New prospects land as candidates for your review — never auto-active. |
 
 Everything is observable on the dashboard at `http://localhost:3000`.
 
@@ -35,9 +36,11 @@ cp .env.example .env
 
 Fill in:
 - `ANTHROPIC_API_KEY` — required. Get from https://console.anthropic.com.
-- `RESEND_API_KEY` — required to send the weekly report and outreach emails.
+- `RESEND_API_KEY` — required to send the weekly report, outreach emails, and magic-link sign-in.
 - `REPORT_FROM_EMAIL` — must be a verified Resend sender (a domain you own).
 - `REPORT_TO_EMAIL` — defaults to `zjones@gowaffl.com`.
+- `DASHBOARD_SECRET` — generate with `openssl rand -hex 32`. Signs session cookies.
+- `DASHBOARD_ALLOWED_EMAILS` — comma-separated allowlist of emails that can sign in.
 
 Optional but recommended:
 - `BROKER_INBOX_*` — set up a dedicated inbox (e.g. `deals@yourholdco.com`), use a Gmail
@@ -93,13 +96,27 @@ Or click "Run now" on the **Agents** page in the dashboard.
 
 ## The dashboard
 
+Behind magic-link auth. First visit redirects to `/login`; enter an email on the allowlist
+and you'll receive a sign-in link valid for 15 minutes. Session lasts 30 days.
+
 - **/** — KPIs, open risk alerts, recent agent runs.
 - **/deals** — Kanban pipeline (sourced → scored → qualified → matching → funding → diligence → won).
 - **/outreach** — **Critical screen.** All AI-drafted investor outreach awaiting your approval. Click *Approve & Send* to fire it via Resend.
-- **/investors** — CRM table.
+- **/investors** — Active CRM table.
+- **/investors/candidates** — Enrichment output awaiting your review. Promote good ones, archive the rest.
 - **/lenders** — Active loan applications + lender library.
 - **/reports** — Weekly report archive. Each is the same HTML that's emailed.
 - **/agents** — Manual triggers + run history with token usage and cost.
+
+### Putting the dashboard on a public host
+
+Auth is real (HMAC-signed session cookies + magic-link tokens, allowlist gating), but the
+threat model is "one operator, one domain." Before exposing it publicly:
+
+1. Set `DASHBOARD_SECRET` to a fresh 32-byte hex string.
+2. Restrict `DASHBOARD_ALLOWED_EMAILS` to only the addresses that should access.
+3. Terminate TLS at your reverse proxy (the cookie is marked `Secure` in production).
+4. Consider IP-restricting at the load balancer if it's truly single-user.
 
 ## Architecture notes
 

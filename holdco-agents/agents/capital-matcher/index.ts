@@ -29,7 +29,7 @@ export async function runCapitalMatcher(): Promise<void> {
       return;
     }
 
-    const investors = db().prepare(`SELECT * FROM investors`).all() as Investor[];
+    const investors = db().prepare(`SELECT * FROM investors WHERE status = 'active'`).all() as Investor[];
     if (investors.length === 0) {
       run.finish({
         status: 'success',

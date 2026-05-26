@@ -1,15 +1,22 @@
+import Link from 'next/link';
 import { db } from '../../../shared/db/client.js';
 import type { Investor } from '../../../shared/types.js';
 
 export const dynamic = 'force-dynamic';
 
 export default function InvestorsPage() {
-  const list = db().prepare(`SELECT * FROM investors ORDER BY created_at DESC`).all() as Investor[];
+  const list = db().prepare(`SELECT * FROM investors WHERE status = 'active' ORDER BY created_at DESC`).all() as Investor[];
+  const candidateCount = (db().prepare(`SELECT COUNT(*) AS c FROM investors WHERE status = 'candidate'`).get() as { c: number }).c;
   return (
     <div>
-      <h1 className="text-2xl font-semibold mb-4">Investors CRM</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-semibold">Investors CRM</h1>
+        <Link href="/investors/candidates" className="text-sm">
+          {candidateCount} candidate{candidateCount === 1 ? '' : 's'} awaiting review →
+        </Link>
+      </div>
       <p className="text-sm text-[var(--muted)] mb-6">
-        {list.length} investors. Drop a CSV at <code>data/investors.csv</code> and run <code>npm run db:seed</code> to import.
+        {list.length} active investors. Drop a CSV at <code>data/investors.csv</code> and run <code>npm run db:seed</code> to import.
       </p>
       <table className="w-full text-sm">
         <thead>

@@ -1,10 +1,11 @@
 import Database from 'better-sqlite3';
-import { readFileSync, existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import 'dotenv/config';
+import { runMigrations } from './migrations.js';
+import { getSchemaSql } from './schema.js';
 
 const DB_PATH = process.env.DB_PATH ?? './data/holdco.db';
-const SCHEMA_PATH = resolve(import.meta.dirname, 'schema.sql');
 
 let _db: Database.Database | null = null;
 
@@ -16,10 +17,8 @@ export function db(): Database.Database {
   _db = new Database(absPath);
   _db.pragma('journal_mode = WAL');
   _db.pragma('foreign_keys = ON');
-  if (fresh) {
-    const schema = readFileSync(SCHEMA_PATH, 'utf8');
-    _db.exec(schema);
-  }
+  if (fresh) _db.exec(getSchemaSql());
+  runMigrations(_db);
   return _db;
 }
 

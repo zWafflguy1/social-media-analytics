@@ -12,7 +12,7 @@ export type LoanAppStatus =
 export type FundingStatus = 'verbal' | 'LOI' | 'term-sheet' | 'committed' | 'funded';
 
 export type AgentName =
-  | 'deal-scout' | 'capital-matcher' | 'debt-architect' | 'portfolio-cfo';
+  | 'deal-scout' | 'capital-matcher' | 'debt-architect' | 'portfolio-cfo' | 'investor-enricher';
 
 export type Deal = {
   id: number;
@@ -41,6 +41,9 @@ export type Deal = {
   notes: string | null;
 };
 
+export type InvestorStatus = 'active' | 'candidate' | 'archived';
+export type InvestorOrigin = 'manual' | 'sec-form-d' | 'google-news' | 'newsapi';
+
 export type Investor = {
   id: number;
   name: string;
@@ -58,6 +61,9 @@ export type Investor = {
   last_contacted_at: number | null;
   created_at: number;
   notes: string | null;
+  status: InvestorStatus;
+  origin: InvestorOrigin;
+  confidence: number | null;
 };
 
 export type Lender = {

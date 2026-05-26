@@ -5,6 +5,7 @@ import { runCapitalMatcher } from '../agents/capital-matcher/index.js';
 import { runDebtArchitect } from '../agents/debt-architect/index.js';
 import { runRiskScan } from '../agents/portfolio-cfo/risk-scan.js';
 import { generateAndSendWeeklyReport } from '../agents/portfolio-cfo/weekly-report.js';
+import { runInvestorEnricher } from '../agents/investor-enricher/index.js';
 import { db } from '../shared/db/client.js';
 
 const DEAL_SCOUT_CRON = process.env.DEAL_SCOUT_CRON ?? '0 */6 * * *';      // every 6 hrs
@@ -12,6 +13,7 @@ const MATCHER_CRON    = process.env.MATCHER_CRON    ?? '15 */6 * * *';      // 1
 const DEBT_CRON       = process.env.DEBT_CRON       ?? '30 */6 * * *';      // 30min after scout
 const RISK_SCAN_CRON  = process.env.RISK_SCAN_CRON  ?? '0 7 * * *';         // daily 7 AM
 const REPORT_CRON     = process.env.WEEKLY_REPORT_CRON ?? '0 5 * * 1';      // Mon 5 AM
+const ENRICHER_CRON   = process.env.INVESTOR_ENRICHER_CRON ?? '0 3 * * 6';  // Sat 3 AM
 
 db();                                                                       // ensure schema applied
 
@@ -23,18 +25,20 @@ function wrap(name: string, fn: () => Promise<void>) {
   };
 }
 
-cron.schedule(DEAL_SCOUT_CRON, wrap('deal-scout',      runDealScout));
-cron.schedule(MATCHER_CRON,    wrap('capital-matcher', runCapitalMatcher));
-cron.schedule(DEBT_CRON,       wrap('debt-architect',  runDebtArchitect));
-cron.schedule(RISK_SCAN_CRON,  wrap('risk-scan',       runRiskScan));
-cron.schedule(REPORT_CRON,     wrap('weekly-report',   generateAndSendWeeklyReport));
+cron.schedule(DEAL_SCOUT_CRON, wrap('deal-scout',         runDealScout));
+cron.schedule(MATCHER_CRON,    wrap('capital-matcher',    runCapitalMatcher));
+cron.schedule(DEBT_CRON,       wrap('debt-architect',     runDebtArchitect));
+cron.schedule(RISK_SCAN_CRON,  wrap('risk-scan',          runRiskScan));
+cron.schedule(REPORT_CRON,     wrap('weekly-report',      generateAndSendWeeklyReport));
+cron.schedule(ENRICHER_CRON,   wrap('investor-enricher',  runInvestorEnricher));
 
 console.log('[scheduler] running. Cron expressions:');
-console.log(`  deal-scout      ${DEAL_SCOUT_CRON}`);
-console.log(`  capital-matcher ${MATCHER_CRON}`);
-console.log(`  debt-architect  ${DEBT_CRON}`);
-console.log(`  risk-scan       ${RISK_SCAN_CRON}`);
-console.log(`  weekly-report   ${REPORT_CRON}`);
+console.log(`  deal-scout         ${DEAL_SCOUT_CRON}`);
+console.log(`  capital-matcher    ${MATCHER_CRON}`);
+console.log(`  debt-architect     ${DEBT_CRON}`);
+console.log(`  risk-scan          ${RISK_SCAN_CRON}`);
+console.log(`  weekly-report      ${REPORT_CRON}`);
+console.log(`  investor-enricher  ${ENRICHER_CRON}`);
 console.log('Dashboard: http://localhost:3000');
 
 // Keep process alive

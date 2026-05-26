@@ -70,10 +70,10 @@ function parseLine(line: string): string[] {
 const ins = db().prepare(`
   INSERT INTO investors
     (name, type, focus_sectors, check_size_min, check_size_max, geography, thesis,
-     contact_name, contact_email, contact_url, source_url, notes, created_at)
+     contact_name, contact_email, contact_url, source_url, notes, created_at, status, origin)
   VALUES
     (@name, @type, @focus_sectors, @check_size_min, @check_size_max, @geography, @thesis,
-     @contact_name, @contact_email, @contact_url, @source_url, @notes, @created_at)
+     @contact_name, @contact_email, @contact_url, @source_url, @notes, @created_at, 'active', 'manual')
 `);
 
 const t = now();

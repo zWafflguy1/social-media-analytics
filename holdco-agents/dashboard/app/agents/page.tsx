@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 type Run = { id: number; agent_name: string; started_at: number; finished_at: number | null; status: string; summary: string | null; error: string | null; items_processed: number; items_created: number; cost_cents: number };
 
-const AGENTS = ['deal-scout', 'capital-matcher', 'debt-architect', 'risk-scan', 'weekly-report'];
+const AGENTS = ['deal-scout', 'capital-matcher', 'debt-architect', 'investor-enricher', 'risk-scan', 'weekly-report'];
 
 export default function AgentsPage() {
   const runs = db().prepare(`SELECT * FROM agent_runs ORDER BY started_at DESC LIMIT 50`).all() as Run[];
@@ -17,7 +17,7 @@ export default function AgentsPage() {
         <p className="text-sm text-[var(--muted)]">Trigger agents manually or review their run history. The scheduler runs them automatically per the cron config in <code>.env</code>.</p>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
+      <div className="grid grid-cols-6 gap-2">
         {AGENTS.map((a) => <AgentRunButton key={a} name={a} />)}
       </div>
 

@@ -4,11 +4,13 @@ import { runCapitalMatcher } from '../../../../../../agents/capital-matcher/inde
 import { runDebtArchitect } from '../../../../../../agents/debt-architect/index.js';
 import { runRiskScan } from '../../../../../../agents/portfolio-cfo/risk-scan.js';
 import { generateAndSendWeeklyReport } from '../../../../../../agents/portfolio-cfo/weekly-report.js';
+import { runInvestorEnricher } from '../../../../../../agents/investor-enricher/index.js';
 
 const HANDLERS: Record<string, () => Promise<void>> = {
   'deal-scout': runDealScout,
   'capital-matcher': runCapitalMatcher,
   'debt-architect': runDebtArchitect,
+  'investor-enricher': runInvestorEnricher,
   'risk-scan': runRiskScan,
   'weekly-report': generateAndSendWeeklyReport,
 };
