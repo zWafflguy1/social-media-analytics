@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+.card {
+  @apply rounded-2xl border border-white/10 bg-panel p-5;
+}
+
+.btn {
+  @apply rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50;
+}
+
+.input {
+  @apply w-full rounded-lg border border-white/10 bg-ink px-3 py-2 text-sm outline-none focus:border-accent;
+}
+
+.prose-atlas {
+  @apply text-sm leading-relaxed text-slate-200 whitespace-pre-wrap;
+}
