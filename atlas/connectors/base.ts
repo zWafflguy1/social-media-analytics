@@ -1,19 +1,20 @@
-import { type EventInput } from "../lib/events/schema";
+// Re-exports so connector authors import everything from one place.
+export { defineConnector, getConnector, listConnectors } from "./registry";
+export { event, actor, verifyHmac, verifyToken } from "./helpers";
+export type {
+  ConnectorDefinition,
+  ConnectorContext,
+  SyncResult,
+  AuthSpec,
+  AuthField,
+} from "./types";
 
 /**
- * A connector's only job: turn source-specific data into normalized EventInputs
- * and hand them to the ingest endpoint. Push connectors implement `handleWebhook`;
- * pull connectors implement `poll`. Both produce the same universal event shape.
+ * For OUT-OF-PROCESS connectors (a separate service that can't import this
+ * package), POST normalized events straight to the ingest endpoint. In-process
+ * connectors don't need this — they just implement map()/sync().
  */
-export interface Connector {
-  source: string;
-  /** Transform an inbound webhook payload into events. */
-  handleWebhook?(payload: unknown): EventInput[] | Promise<EventInput[]>;
-  /** Pull new data since a cursor; return events + the next cursor. */
-  poll?(cursor?: string): Promise<{ events: EventInput[]; cursor?: string }>;
-}
-
-/** POST events to the Atlas ingest endpoint for a tenant. */
+import { type EventInput } from "../lib/events/schema";
 export async function deliver(
   baseUrl: string,
   tenantId: string,

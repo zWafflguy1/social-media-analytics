@@ -1,8 +1,7 @@
-import { type Connector } from "./base";
-import { type EventInput } from "../lib/events/schema";
+import { defineConnector, event, actor, verifyToken } from "./base";
 
-// Example push connector: Gmail/MS365 webhook → universal events. The shape of
-// `payload` here is illustrative; map your provider's real fields in mapMessage.
+// Example PUSH connector: Gmail / MS365 webhook → universal events.
+// Integrating a real provider = adjust this one map() to its payload shape.
 interface RawMessage {
   id: string;
   threadId: string;
@@ -13,28 +12,38 @@ interface RawMessage {
   sentAt: string;
 }
 
-export const emailConnector: Connector = {
+export const emailConnector = defineConnector<{ messages?: RawMessage[] }>({
   source: "gmail",
-  handleWebhook(payload: unknown): EventInput[] {
-    const messages = (payload as { messages?: RawMessage[] }).messages ?? [];
-    return messages.map(mapMessage);
-  },
-};
-
-function mapMessage(m: RawMessage): EventInput {
-  return {
-    source: "gmail",
-    type: "email.received",
-    occurred_at: new Date(m.sentAt).toISOString(),
-    subject: m.subject,
-    body: m.body,
-    actors: [
-      { role: "sender", id: m.from },
-      ...m.to.map((t) => ({ role: "recipient", id: t })),
+  displayName: "Gmail / Google Workspace",
+  auth: {
+    kind: "oauth2",
+    docsUrl: "https://developers.google.com/gmail/api",
+    fields: [
+      { key: "webhook_token", label: "Webhook verification token", secret: true, required: true },
     ],
-    metrics: {},
-    links: { thread: m.threadId },
-    sensitivity: "confidential",
-    dedupe_key: `gmail:${m.id}`,
-  };
-}
+  },
+
+  // Simple shared-token verification (swap for Google Pub/Sub JWT in production).
+  verify(ctx) {
+    return verifyToken(
+      ctx.raw?.headers.get("x-atlas-webhook-token") ?? null,
+      ctx.secrets.webhook_token ?? ""
+    );
+  },
+
+  map(payload) {
+    return (payload.messages ?? []).map((m) =>
+      event({
+        source: "gmail",
+        type: "email.received",
+        id: m.id,
+        occurredAt: m.sentAt,
+        subject: m.subject,
+        body: m.body,
+        actors: [actor.sender(m.from), ...m.to.map((t) => actor.recipient(t))],
+        links: { thread: m.threadId },
+        sensitivity: "confidential",
+      })
+    );
+  },
+});

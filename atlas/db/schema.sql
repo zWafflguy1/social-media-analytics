@@ -178,3 +178,29 @@ CREATE TABLE IF NOT EXISTS briefs (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS briefs_tenant_kind_time ON briefs (tenant_id, kind, created_at DESC);
+
+-- ─── Connectors — per-tenant integration config & sync state ──────────────────
+-- One row per (tenant, source) connection. `config` holds non-secret settings;
+-- `secrets` holds tokens/signing-keys (encrypt at rest in production — the app
+-- treats this column as opaque). This is all a connector needs to run.
+CREATE TABLE IF NOT EXISTS connector_accounts (
+  tenant_id    TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  source       TEXT NOT NULL,            -- matches a registered connector's source
+  display_name TEXT,
+  config       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  secrets      JSONB NOT NULL DEFAULT '{}'::jsonb,
+  enabled      BOOLEAN NOT NULL DEFAULT true,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (tenant_id, source)
+);
+
+-- Cursor for pull/poll connectors so each sync resumes where it left off.
+CREATE TABLE IF NOT EXISTS connector_sync_state (
+  tenant_id      TEXT NOT NULL,
+  source         TEXT NOT NULL,
+  cursor         TEXT,
+  last_synced_at TIMESTAMPTZ,
+  last_status    TEXT,
+  PRIMARY KEY (tenant_id, source)
+);

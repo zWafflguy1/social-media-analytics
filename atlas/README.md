@@ -46,7 +46,8 @@ Layer 3  Agency         analyst (chat) · recommender (briefs) · tools w/ tiers
 | Approval inbox | `app/api/approvals`, `app/approvals` |
 | Audit log | `lib/audit.ts` |
 | Multi-tenancy + autonomy ceiling | `lib/tenancy.ts` |
-| Connectors | `connectors/` |
+| Connector SDK | `connectors/` (see `connectors/CONNECTORS.md`) |
+| Universal connector routes | `app/api/connectors/[source]/{webhook,sync}` |
 
 ## Permission tiers (the leash)
 
@@ -99,6 +100,17 @@ curl -X POST http://localhost:3000/api/events \
 ```
 
 Recorded calls must include a `consent` block or they're rejected (`lib/consent.ts`).
+
+## Adding a connector (built to be trivial)
+
+Integrating a company's tool is **one file + one import line**. You implement at
+most `map()` (webhooks) and/or `sync()` (polling); the platform handles routing,
+signature verification, PII redaction, consent, dedupe, ingestion, cursors, and
+audit. Copy `connectors/template.ts`, fill the TODOs, add it to
+`connectors/index.ts` — it's instantly live at
+`/api/connectors/<source>/{webhook,sync}` and appears in `GET /api/connectors`.
+
+Full guide: **`connectors/CONNECTORS.md`**.
 
 ## Scheduling (production)
 
