@@ -6,6 +6,7 @@
  */
 import "./email";
 import "./call";
+import "./webhook";
 // import "./template"; // ← copy template.ts and register your connector here
 
 export { listConnectors, getConnector } from "./registry";
