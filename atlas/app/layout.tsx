@@ -11,6 +11,7 @@ const NAV = [
   { href: "/", label: "Overview" },
   { href: "/chat", label: "Ask Atlas" },
   { href: "/data", label: "Data Inputs" },
+  { href: "/workforce", label: "Workforce" },
   { href: "/approvals", label: "Approvals" },
   { href: "/onboarding", label: "Onboarding" },
 ];

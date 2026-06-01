@@ -38,6 +38,7 @@ export const CATEGORIES = [
   "Project Management",
   "Marketing & Social",
   "Storage",
+  "Workforce",
   "Custom",
 ] as const;
 
@@ -160,6 +161,12 @@ export const CATALOG: CatalogEntry[] = [
               { key: "bucket", label: "Bucket name", required: true } ] },
   { source: "dropbox", name: "Dropbox", category: "Storage", authKind: "oauth2",
     description: "Shared files and folders.", provides: ["file.added"], fields: oauth },
+
+  // ─── Workforce (consent-gated endpoint monitoring) ───
+  { source: "endpoint", name: "Work Computer Agent", category: "Workforce", authKind: "token",
+    description: "Desktop agent that reports task activity & efficiency. Consent-gated, metadata-only by default. Configure on the Workforce screen.",
+    provides: ["activity.*"],
+    fields: [{ key: "note", label: "Notes (enroll devices on the Workforce screen)" }] },
 
   // ─── Custom (connect anything) ───
   { source: "webhook", name: "Generic Webhook", category: "Custom", authKind: "token",

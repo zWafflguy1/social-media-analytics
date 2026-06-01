@@ -204,3 +204,66 @@ CREATE TABLE IF NOT EXISTS connector_sync_state (
   last_status    TEXT,
   PRIMARY KEY (tenant_id, source)
 );
+
+-- ─── Workforce — endpoint monitoring (consent-gated, transparent) & SOPs ──────
+-- People whose work activity may be captured. Activity is ONLY ingested when
+-- enrolled = true AND consent_at is set — the monitoring consent gate.
+CREATE TABLE IF NOT EXISTS employees (
+  id             TEXT PRIMARY KEY,
+  tenant_id      TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  email          TEXT,
+  role           TEXT,
+  team           TEXT,
+  enrolled       BOOLEAN NOT NULL DEFAULT false,
+  consent_at     TIMESTAMPTZ,
+  consent_method TEXT,                 -- policy_ack | signed | admin
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, email)
+);
+
+-- Enrolled work computers. The desktop agent authenticates with device id +
+-- a key whose hash is stored here (the plaintext key is shown once at enroll).
+CREATE TABLE IF NOT EXISTS devices (
+  id             TEXT PRIMARY KEY,
+  tenant_id      TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  employee_id    TEXT REFERENCES employees(id) ON DELETE CASCADE,
+  label          TEXT,
+  agent_key_hash TEXT NOT NULL,
+  status         TEXT NOT NULL DEFAULT 'active',  -- active | revoked
+  last_seen_at   TIMESTAMPTZ,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS devices_tenant ON devices (tenant_id);
+
+-- One monitoring policy per tenant. Privacy-protective defaults: metadata only
+-- (no content/keystrokes/screenshots), sensitive categories excluded.
+CREATE TABLE IF NOT EXISTS monitoring_policies (
+  tenant_id           TEXT PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+  capture_content     BOOLEAN NOT NULL DEFAULT false,
+  captured_categories TEXT[] NOT NULL DEFAULT '{}',   -- empty = all non-excluded
+  excluded_apps       TEXT[] NOT NULL DEFAULT '{}',
+  excluded_categories TEXT[] NOT NULL DEFAULT
+                        ARRAY['personal','banking','health','personal_messaging'],
+  active_hours        TEXT,                            -- e.g. '09:00-18:00'; off-hours dropped
+  retention_days      INTEGER NOT NULL DEFAULT 90,
+  updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Standard operating procedures — the business's tribal knowledge, captured.
+-- Either authored by a human or inferred by the SOP miner from observed work.
+CREATE TABLE IF NOT EXISTS sops (
+  id          TEXT PRIMARY KEY,
+  tenant_id   TEXT NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  title       TEXT NOT NULL,
+  role        TEXT,
+  steps       JSONB NOT NULL DEFAULT '[]'::jsonb,
+  rationale   TEXT,
+  source      TEXT NOT NULL DEFAULT 'authored',  -- authored | inferred
+  confidence  REAL NOT NULL DEFAULT 1,
+  status      TEXT NOT NULL DEFAULT 'active',     -- proposed | active | archived
+  evidence    JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS sops_tenant_role ON sops (tenant_id, role);
