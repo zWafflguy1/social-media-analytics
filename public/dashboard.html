@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SEO/AEO Agent Dashboard</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; padding: 24px; max-width: 1100px; margin-inline: auto; line-height: 1.5; }
+    h1 { font-size: 1.4rem; } h2 { font-size: 1.1rem; margin-top: 2rem; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent); vertical-align: top; }
+    .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; border: 1px solid currentColor; }
+    .ok { color: #15803d; } .bad { color: #b91c1c; } .warn { color: #b45309; }
+    .muted { opacity: 0.65; } .summary { padding: 12px 16px; border-left: 3px solid #2563eb; background: color-mix(in srgb, #2563eb 8%, transparent); border-radius: 4px; }
+    button { padding: 6px 14px; border-radius: 6px; border: 1px solid currentColor; background: transparent; cursor: pointer; }
+    #status { margin-left: 10px; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1>SEO / AEO Ranking Agent</h1>
+  <p class="muted" id="meta">Loading…</p>
+  <p><button id="run">Run optimization cycle now</button><span id="status"></span></p>
+  <div class="summary" id="summary"></div>
+
+  <h2>Search Rankings</h2>
+  <table id="ranks"><thead><tr><th>Query</th><th>Engine</th><th>Position</th><th>Top competitors</th></tr></thead><tbody></tbody></table>
+
+  <h2>AI Engine Visibility (AEO)</h2>
+  <table id="aeo"><thead><tr><th>Prospect question</th><th>Cited</th><th>Mentioned</th><th>Who gets cited instead</th></tr></thead><tbody></tbody></table>
+
+  <h2>Recommended Actions</h2>
+  <table id="actions"><thead><tr><th>#</th><th>Action</th><th>Category</th><th>Auto</th><th>Status</th></tr></thead><tbody></tbody></table>
+
+  <h2>Audit Findings</h2>
+  <table id="findings"><thead><tr><th>Page</th><th>Severity</th><th>Rule</th><th>Detail</th></tr></thead><tbody></tbody></table>
+
+  <h2>Content Briefs</h2>
+  <div id="briefs"></div>
+
+  <script>
+    const key = new URLSearchParams(location.search).get("key");
+    if (!key) document.body.innerHTML = "<p>Add ?key=YOUR_SITE_KEY to the URL.</p>";
+
+    async function load() {
+      const res = await fetch(`/api/v1/state?key=${encodeURIComponent(key)}`);
+      if (!res.ok) { document.getElementById("meta").textContent = "Auth failed — check your site key."; return; }
+      const s = await res.json();
+      document.getElementById("meta").textContent = s.lastRunAt
+        ? `Last cycle: ${new Date(s.lastRunAt).toLocaleString()} · ${s.vitalsCount} vitals beacons collected`
+        : "No cycle has completed yet — the first run starts shortly after boot.";
+      document.getElementById("summary").textContent = s.summary || "Waiting for first optimization cycle…";
+
+      fill("ranks", s.ranks.map(r => [r.query, r.engine, r.position == null ? '<span class="bad">not in top 30</span>' : (r.position <= 3 ? `<span class="ok">#${r.position}</span>` : `#${r.position}`), r.topCompetitors.join(", ")]));
+      fill("aeo", s.aeo.map(a => [a.query, a.cited ? '<span class="ok">✓</span>' : '<span class="bad">✗</span>', a.mentioned ? '<span class="ok">✓</span>' : '<span class="bad">✗</span>', a.citedDomains.join(", ")]));
+      fill("actions", s.actions.map(a => [a.priority, `<strong>${esc(a.title)}</strong><br><span class="muted">${esc(a.description)}</span>`, `<span class="pill">${a.category}</span>`, a.autoApplicable ? "✓" : "", a.status]));
+      fill("findings", s.auditFindings.map(f => [f.page, `<span class="${f.severity === "critical" ? "bad" : f.severity === "warning" ? "warn" : "muted"}">${f.severity}</span>`, f.rule, esc(f.detail)]));
+      document.getElementById("briefs").innerHTML = s.contentBriefs.map(b =>
+        `<p><strong>${esc(b.targetQuery)}</strong> <span class="muted">(${esc(b.intent)})</span></p><ul>${b.outline.map(o => `<li>${esc(o)}</li>`).join("")}</ul>`
+      ).join("") || '<p class="muted">None yet.</p>';
+    }
+
+    function fill(id, rows) {
+      document.querySelector(`#${id} tbody`).innerHTML =
+        rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join("")}</tr>`).join("") ||
+        '<tr><td colspan="9" class="muted">No data yet.</td></tr>';
+    }
+    function esc(s) { const d = document.createElement("span"); d.textContent = String(s ?? ""); return d.innerHTML; }
+
+    document.getElementById("run").onclick = async () => {
+      const st = document.getElementById("status");
+      st.textContent = "starting…";
+      const res = await fetch(`/api/v1/run?key=${encodeURIComponent(key)}`, { method: "POST" });
+      st.textContent = res.status === 202 ? "cycle running — refresh in a few minutes" : res.status === 409 ? "already running" : "failed";
+    };
+
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>

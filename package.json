@@ -1,0 +1,30 @@
+{
+  "name": "ai-seo-ranking-agent",
+  "version": "0.1.0",
+  "description": "Embeddable AI agent for continuous SEO + AI-engine-optimization (AEO): real-time rank monitoring, site auditing, and Claude-generated optimizations applied via a drop-in widget.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "agent:run-once": "tsx src/index.ts --once"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
